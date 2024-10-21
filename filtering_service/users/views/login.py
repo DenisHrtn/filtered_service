@@ -24,8 +24,8 @@ class LoginView(GenericAPIView):
             access_token = AccessToken.for_user(user)
             refresh_token = RefreshToken.for_user(user)
             response = Response("Logged successfully", status=status.HTTP_200_OK)
-            response.set_cookie(key='access_token', value=str(access_token), httponly=False, samesite='Lax')
-            response.set_cookie(key='refresh_token', value=str(refresh_token), httponly=False, samesite='Lax')
+            response.set_cookie(key='access_token', value=str(access_token), httponly=False, samesite='Lax', domain='localhost')
+            response.set_cookie(key='refresh_token', value=str(refresh_token), httponly=False, samesite='Lax', domain='localhost')
 
             return response
         else:

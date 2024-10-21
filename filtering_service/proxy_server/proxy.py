@@ -90,7 +90,7 @@ class Proxy:
             print(f"Ошибка при отправке запроса на бекенд: {e}")
 
     def read_file(self):
-        with open('/Users/denisharitonciksergeevic/filtering_service/filtering_service/proxy_server/data_3.log', 'r', encoding='utf-8') as file:
+        with open('/Users/denisharitonciksergeevic/filtering_service/filtering_service/proxy_server/data 2.log', 'r', encoding='utf-8') as file:
             lines = file.readlines()
             lines = list(i.strip("\n") for i in lines)
             return lines

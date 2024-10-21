@@ -20,18 +20,24 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "drf_yasg",
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "corsheaders",
     "users.apps.UsersConfig",
     "admin_panel.apps.AdminPanelConfig",
 ]
 
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'users.middlewares.TokenMiddleware',
 ]
 
 ROOT_URLCONF = "filtering_service.urls"
@@ -52,7 +58,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "filtering_service.wsgi.application"
+# WSGI_APPLICATION = "filtering_service.wsgi.application"
+ASGI_APPLICATION = "filtering_service.asgi.application"
 
 
 # Database
@@ -180,10 +187,21 @@ SIMPLE_JWT = {
 
 AUTH_USER_MODEL = 'users.User'
 
-
 CELERY_BROKER_URL = config("CELERY_BROKER_URL")
 CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND")
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
+
+
+SWAGGER_SETTINGS = {
+    'USE_SESSION_AUTH': False,
+    'SECURITY_DEFINITIONS': {
+        'X-Proxy-Auth': {
+            'type': 'apiKey',
+            'name': 'X-Proxy-Auth',
+            'in': 'header'
+        }
+    }
+}

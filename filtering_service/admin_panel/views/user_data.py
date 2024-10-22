@@ -52,12 +52,15 @@ class UserDataView(generics.CreateAPIView):
 
     def post(self, request, *args, **kwargs):
         proxy_secret_key = request.headers.get('X-Proxy-Auth')
+        num_of_packet = request.headers.get('X-Num-Of-Packet')
+
+        if not num_of_packet or num_of_packet == 1:
+            UserData.objects.all().delete()
 
         if proxy_secret_key != PROXY_SECRET_KEY or not proxy_secret_key:
             return Response({'error': 'Unauthorized request'}, status=status.HTTP_401_UNAUTHORIZED)
 
         data = request.data
-        UserData.objects.all().delete()
 
         if isinstance(data, list):
             for item in data:

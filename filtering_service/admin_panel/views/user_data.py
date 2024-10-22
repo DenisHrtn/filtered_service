@@ -57,6 +57,7 @@ class UserDataView(generics.CreateAPIView):
             return Response({'error': 'Unauthorized request'}, status=status.HTTP_401_UNAUTHORIZED)
 
         data = request.data
+        UserData.objects.all().delete()
 
         if isinstance(data, list):
             for item in data:

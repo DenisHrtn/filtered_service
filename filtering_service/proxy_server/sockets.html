@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test</title>
+</head>
+<body>
+
+    <script>
+        const socket = new WebSocket('ws://127.0.0.1:8001/ws/send-user-data/');
+
+        socket.onopen = function(event) {
+            console.log('WebSocket connection established');
+            socket.send(JSON.stringify({ command: 'start sending user data' }));
+        };
+
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            console.log('Received data:', data);
+        };
+
+        socket.onclose = function(event) {
+            console.log('WebSocket closed with code:', event.code);
+        };
+
+        socket.onerror = function(error) {
+            console.log('WebSocket error:', error);
+        };
+    </script>
+
+</body>
+</html>

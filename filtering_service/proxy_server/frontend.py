@@ -12,7 +12,8 @@ def send_message(host, port, message):
         sock.sendall(message.encode('utf-8'))
         print(f"Сообщение отправлено на прокси: {message}")
 
+
 if __name__ == "__main__":
-    message = "[Email, UserID]"
+    message = "[SupportLevel, UserID]"
     send_message(HOST, PORT, message)
     time.sleep(10000)

@@ -10,6 +10,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# CELERY_RESULT_BACKEND="redis://redis/0"
+
+CHANNELS_REDIS_HOST = "redis://127.0.0.1:6379/0"
+
 
 # Application definition
 
@@ -26,6 +30,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "users.apps.UsersConfig",
     "admin_panel.apps.AdminPanelConfig",
+    "channels",
 ]
 
 MIDDLEWARE = [
@@ -58,8 +63,17 @@ TEMPLATES = [
     },
 ]
 
-# WSGI_APPLICATION = "filtering_service.wsgi.application"
+WSGI_APPLICATION = "filtering_service.wsgi.application"
 ASGI_APPLICATION = "filtering_service.asgi.application"
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [CHANNELS_REDIS_HOST],
+            'symmetric_encryption_keys': [SECRET_KEY],
+        }
+    }
+}
 
 
 # Database

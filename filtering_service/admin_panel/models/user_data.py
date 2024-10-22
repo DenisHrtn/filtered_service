@@ -1,7 +1,9 @@
 from django.db import models
 
+from admin_panel.mixins.audit_mixin import AuditMixin
 
-class UserData(models.Model):
+
+class UserData(AuditMixin):
     email = models.CharField(max_length=255, null=True, blank=True)
     endpoint = models.CharField(max_length=255, null=True, blank=True)
     name = models.CharField(max_length=255, null=True, blank=True)

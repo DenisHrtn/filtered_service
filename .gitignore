@@ -155,3 +155,4 @@ dmypy.json
 cython_debug/
 .idea/
 /bsuir_repo_back/celerybeat-schedule.db
+FRONT

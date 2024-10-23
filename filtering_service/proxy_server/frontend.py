@@ -14,6 +14,6 @@ def send_message(host, port, message):
 
 
 if __name__ == "__main__":
-    message = "[SupportLevel, UserID]"
+    message = '{"Mask": true, "Delete": true, "Filter": false, "Fields_to_hide": ["Email", "Endpoint", "Номер телефона", "Страна", "Регион", "Срок действия карты", "Специальность"]}'
     send_message(HOST, PORT, message)
     time.sleep(10000)

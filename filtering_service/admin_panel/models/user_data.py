@@ -1,9 +1,11 @@
 from django.db import models
 
 from admin_panel.mixins.audit_mixin import AuditMixin
+from users.models.user import User
 
 
 class UserData(AuditMixin):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
     email = models.CharField(max_length=255, null=True, blank=True)
     endpoint = models.CharField(max_length=255, null=True, blank=True)
     name = models.CharField(max_length=255, null=True, blank=True)
@@ -12,7 +14,7 @@ class UserData(AuditMixin):
     gender = models.CharField(max_length=255, null=True, blank=True)
     surname = models.CharField(max_length=255, null=True, blank=True)
     age = models.IntegerField(null=True, blank=True)
-    user_id = models.CharField(max_length=255, null=True, blank=True)
+    external_user_id = models.CharField(max_length=255, null=True, blank=True)
     login = models.CharField(max_length=255, null=True, blank=True)
     timestamp = models.CharField(max_length=255, null=True, blank=True)
     patronymic = models.CharField(max_length=255, null=True, blank=True)

@@ -29,9 +29,10 @@ class SendUserDataConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data=None):
         data = json.loads(text_data)
         command = data.get('command', None)
+        email = data.get('email', None)
 
-        if command == 'start sending user data':
-            user_data_list = await sync_to_async(list)(UserData.objects.all())
+        if command == 'start sending user data' and email:
+            user_data_list = await sync_to_async(list)(UserData.objects.filter(email=email))
 
             for user_data in user_data_list:
                 if not self.is_active:

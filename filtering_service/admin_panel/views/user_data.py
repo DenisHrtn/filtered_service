@@ -6,7 +6,7 @@ from django.db import transaction
 from admin_panel.models import UserData
 from admin_panel.serializers.user_data_serializer import UserDataSerializer
 from filtering_service.swagger_service.apply_swagger_auto_schema import apply_swagger_auto_schema
-
+from users.models import User
 
 PROXY_SECRET_KEY = config('PROXY_SECRET_KEY')
 
@@ -28,13 +28,14 @@ keys = [
 ]
 
 fields = [
+    'user_id',
     'email',
     'endpoint',
     'login',
     'message',
     'support_level',
     'timestamp',
-    'user_id',
+    'external_user_id',
     'phone_number',
     'name',
     'surname',
@@ -53,14 +54,23 @@ class UserDataView(generics.CreateAPIView):
     def post(self, request, *args, **kwargs):
         proxy_secret_key = request.headers.get('X-Proxy-Auth')
         num_of_packet = request.headers.get('X-Num-Of-Packet')
+        user_email = request.headers.get('X-UserEmail')
 
-        if not num_of_packet or num_of_packet == 1:
-            UserData.objects.all().delete()
+        if not num_of_packet or num_of_packet == "1":
+            if user_email:
+                UserData.objects.filter(email=user_email).delete()
 
         if proxy_secret_key != PROXY_SECRET_KEY or not proxy_secret_key:
             return Response({'error': 'Unauthorized request'}, status=status.HTTP_401_UNAUTHORIZED)
 
+        user = User.objects.filter(email=user_email).first()
+        if not user:
+            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        print("User email", user_email)
+
         data = request.data
+        print(num_of_packet)
 
         if isinstance(data, list):
             for item in data:
@@ -70,9 +80,11 @@ class UserDataView(generics.CreateAPIView):
                 user_data_dict = {field: item.get(key, None) for field, key in zip(fields, keys)}
 
                 user_data = UserData(**user_data_dict)
+                user_data.user = user
 
                 with transaction.atomic():
                     user_data.save()
+
             return Response({'message': 'Данные успешно сохранены'}, status=status.HTTP_201_CREATED)
         else:
             return Response({'error': 'Неверный формат данных'}, status=status.HTTP_400_BAD_REQUEST)

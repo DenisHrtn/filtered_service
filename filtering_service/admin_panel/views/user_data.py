@@ -11,6 +11,7 @@ from users.models import User
 PROXY_SECRET_KEY = config('PROXY_SECRET_KEY')
 
 keys = [
+    'user',
     'Email',
     'Endpoint',
     'Login',
@@ -56,21 +57,22 @@ class UserDataView(generics.CreateAPIView):
         num_of_packet = request.headers.get('X-Num-Of-Packet')
         user_email = request.headers.get('X-UserEmail')
 
-        if not num_of_packet or num_of_packet == "1":
+        user = User.objects.filter(email=user_email).first()
+
+        if not user:
+            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        if num_of_packet == "1":
             if user_email:
-                UserData.objects.filter(email=user_email).delete()
+                UserData.objects.filter(user=user).delete()
 
         if proxy_secret_key != PROXY_SECRET_KEY or not proxy_secret_key:
             return Response({'error': 'Unauthorized request'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        user = User.objects.filter(email=user_email).first()
-        if not user:
-            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
-
-        print("User email", user_email)
+        print("User email:", user_email)
+        print("Number of current package:", num_of_packet)
 
         data = request.data
-        print(num_of_packet)
 
         if isinstance(data, list):
             for item in data:

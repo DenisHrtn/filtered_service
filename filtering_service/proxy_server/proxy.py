@@ -1,18 +1,20 @@
-import socket
 import json
 import multiprocessing
 from functools import partial
 import re
-import time
 import requests
 from flask import Flask, request, jsonify
-from flask_cors import CORS  # Импортируем Flask-CORS
+from flask_cors import CORS
+import asyncio
+from decouple import config
 
 number_of_cores = 12
-ENDPOINT = "http://127.0.0.1:8000/api/admin-panel/upload-user-data/"
-STATUS = False
+USER_TASKS = {}
+ENDPOINT = "http://django:8000/api/admin-panel/upload-user-data/"
+X_PROXY_AUTH = config('PROXY_SECRET_KEY')
+
 app = Flask(__name__)
-CORS(app)  # Разрешаем CORS для всех доменов и методов
+CORS(app, resources={r"/upload": {"origins": "http://localhost:3000", "supports_credentials": True}})
 
 
 class Proxy:
@@ -52,17 +54,16 @@ class Proxy:
         """
         Отправляет обработанное сообщение на бек
         """
-        STATUS = False
         counter = 1
         try:
-            url = "http://127.0.0.1:8000/api/admin-panel/upload-user-data/"
+            url = "http://django:8000/api/admin-panel/upload-user-data/"
             for message in messages:
 
                 headers = {
                     "X-UserEmail": user,
                     "X-Num-Of-Packet": f"{counter}",
                     "Content-Type": "application/json",
-                    "X-Proxy-Auth": "V%U<UwFo[#V/,l<$9plp]KE[6@=tU^pDdP|<2<G<C;V/{=Til9~!L|Gs2i*4",
+                    "X-Proxy-Auth": X_PROXY_AUTH,
                 }
                 counter += 1
                 response = requests.post(
@@ -74,9 +75,6 @@ class Proxy:
                     print(
                         f"Ошибка при отправке запроса: {response.status_code}, {response.text}"
                     )
-                if STATUS == True:
-                    break
-
         except Exception as e:
             print(f"Ошибка при отправке запроса на бекенд: {e}")
 
@@ -94,7 +92,6 @@ class Proxy:
 
     def create_json(self, dictionaries):
         with multiprocessing.Pool(processes=number_of_cores) as pool:
-            # Создаем частичную функцию для json.dumps
             new_dictionaries = list()
             lst = list()
             counter = 0
@@ -130,8 +127,9 @@ class Proxy:
         index = 0
 
         for i in dictionaries:
-            if self.replace_data_filter(i["Message"], fields_to_hide) == True:
-                list_to_del.append(index)
+            if "Messge" in i:
+                if self.replace_data_filter(i["Message"], fields_to_hide) == True:
+                    list_to_del.append(index)
             index += 1
         list_to_del = list_to_del[::-1]
         for i in list_to_del:
@@ -144,16 +142,18 @@ class Proxy:
                 if j in i:
                     del i[j]
         for i in dictionaries:
-            i["Message"] = self.replace_data_delete(i["Message"], fields_to_hide)
+            if "Messge" in i:
+                i["Message"] = self.replace_data_delete(i["Message"], fields_to_hide)
         return dictionaries
 
     def mask_message(self, dictionaries, fields_to_hide):
         for i in dictionaries:
             for j in fields_to_hide:
                 if j in i:
-                    i[j] = "*"
+                    i[j] = "***"
         for i in dictionaries:
-            i["Message"] = self.replace_data_mask(i["Message"], fields_to_hide)
+            if "Messge" in i:
+                i["Message"] = self.replace_data_mask(i["Message"], fields_to_hide)
         return dictionaries
 
     def replace_data_mask(self, text, personal_data_list):
@@ -162,9 +162,9 @@ class Proxy:
 
         def repl(match):
             return (
-                match.group(1)
-                + "*" * (len(match.group(0)) - len(match.group(1)) - 1)
-                + "\n"
+                    match.group(1)
+                    + "*" * (len(match.group(0)) - len(match.group(1)) - 1)
+                    + "\n"
             )
 
         result = re.sub(pattern, repl, text)
@@ -208,62 +208,75 @@ def create_json(dictionary):
     return json.dumps(dictionary, ensure_ascii=False)
 
 
-proxy = Proxy(ENDPOINT)
-
-
-@app.route("/upload", methods=["POST"])
-def upload():
+async def handle_request(email, message):
     try:
-        email = ""
-        # Предполагается, что данные приходят в виде JSON или простой строки
-        if request.is_json:
-            data = request.get_json()
-            email = request.headers.get("X-UserEmail")
-            message = json.dumps(data, ensure_ascii=False)
-        else:
-            message = request.get_data(as_text=True)
-
-        print(f"Получено сообщение от frontend: {message}")
-        print(email)
-        STATUS = True
-        # Обработка сообщения
+        print(f"Обработка запроса от {email}")
+        proxy = Proxy(ENDPOINT)
         processed_message = proxy.process_message(message)
-        print(processed_message)
-        # print(f"Обработанное сообщение: {processed_message}")
 
-        # Отправка на бэкенд
-        response = proxy.send_to_back(processed_message, email, ENDPOINT)
-        STATUS = False
+        response = await asyncio.to_thread(proxy.send_to_back, processed_message, email, ENDPOINT)
+
         if response is None:
-            return (
-                jsonify(
-                    {"status": "error", "message": "Ошибка при отправке на бэкенд"}
-                ),
-                500,
-            )
+            return jsonify({"status": "error", "message": "Ошибка при отправке на бэкенд"}), 500
 
-        # Прокси-сервер будет передавать ответ бэкенда клиенту
         try:
             backend_response = response.json()
         except ValueError:
             backend_response = response.text
 
-        return (
-            jsonify(
-                {
-                    "status": "success" if response.status_code == 201 else "error",
-                    "backend_status": response.status_code,
-                    "backend_response": backend_response,
-                }
-            ),
-            response.status_code,
-        )
+        return jsonify({
+            "status": "success" if response.status_code == 201 else "error",
+            "backend_status": response.status_code,
+            "backend_response": backend_response,
+        }), response.status_code
 
     except Exception as e:
         print(f"Ошибка при обработке запроса: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@app.route("/upload", methods=["POST", "OPTIONS"])
+async def upload():
+    if request.method == "OPTIONS":
+        response = jsonify({'message': 'CORS preflight response'})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type, X-UserEmail")
+
+        print("CORS preflight response headers:")
+        print(response.headers)
+
+        return response, 200
+
+    try:
+        if request.is_json:
+            data = request.get_json()
+            message = json.dumps(data, ensure_ascii=False)
+        else:
+            message = request.get_data(as_text=True)
+
+        email = request.headers.get("X-UserEmail")
+
+        print(f"Получено сообщение от {email}")
+
+        if email in USER_TASKS:
+            USER_TASKS[email].cancel()
+            del USER_TASKS[email]
+
+        task = asyncio.create_task(handle_request(email, message))
+        USER_TASKS[email] = task
+
+        return jsonify({"status": "success", "message": "Запрос обрабатывается"}), 200
+
+    except Exception as e:
+        print(f"Ошибка при обработке запроса: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 if __name__ == "__main__":
-    # Запуск Flask-сервера
-    app.run(host="127.0.0.1", port=8080)
+    import hypercorn.asyncio
+    from hypercorn.config import Config
+
+    config = Config()
+    config.bind = ["0.0.0.0:8080"]
+
+    asyncio.run(hypercorn.asyncio.serve(app, config))

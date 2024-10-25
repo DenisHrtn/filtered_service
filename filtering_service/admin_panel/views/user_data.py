@@ -69,9 +69,6 @@ class UserDataView(generics.CreateAPIView):
         if proxy_secret_key != PROXY_SECRET_KEY or not proxy_secret_key:
             return Response({'error': 'Unauthorized request'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        print("User email:", user_email)
-        print("Number of current package:", num_of_packet)
-
         data = request.data
 
         if isinstance(data, list):

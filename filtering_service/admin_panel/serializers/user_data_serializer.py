@@ -11,9 +11,6 @@ class UserDataSerializer(serializers.ModelSerializer):
                   'patronymic', 'birth_date', 'name', 'surname', 'age']
 
     def create(self, validated_data):
-        print("Creating user data with:", validated_data)  # Для отладки
-
-        # Проверка, не пустой ли validated_data
         if not validated_data:
             print("No data provided for creation")
 
@@ -29,7 +26,7 @@ class UserDataSerializer(serializers.ModelSerializer):
             patronymic=validated_data.get('Отчество'),
             birth_date=validated_data.get('Дата рождения'),
             name=validated_data.get('Имя'),
-            surname=validated_data.get('\ufeffФамилия'),  # Убедитесь, что вы используете правильный ключ
+            surname=validated_data.get('\ufeffФамилия'),
             age=validated_data.get('Возраст'),
         )
 

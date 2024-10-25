@@ -69,7 +69,8 @@ class SendUserDataConsumer(AsyncWebsocketConsumer):
                     'login': user_data.login,
                     'timestamp': user_data.timestamp,
                     'support_level': user_data.support_level,
-                    'message': user_data.message
+                    'message': user_data.message,
+                    'endpoint': user_data.endpoint
                 }
 
                 await self.send(text_data=json.dumps(user_data_dict))
